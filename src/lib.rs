@@ -36,23 +36,23 @@ fn day_of_week(year: Year, month: Month, dom: u8) -> Weekday {
 }
 
 fn month_year_header(year: Year, month: Month) -> String {
-    const SMON: [&str; 13] = [
-        "",
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-    ];
+    let smon = match month {
+        1 => "January",
+        2 => "February",
+        3 => "March",
+        4 => "April",
+        5 => "May",
+        6 => "June",
+        7 => "July",
+        8 => "August",
+        9 => "September",
+        10 => "October",
+        11 => "November",
+        12 => "December",
+        _ => unreachable!(),
+    };
 
-    let header = format!("{} {}", SMON[month as usize], year);
+    let header = format!("{} {}", smon, year);
     format!("{:^21}", header)
 }
 
@@ -80,8 +80,34 @@ fn calendar_month(year: Year, month: Month) -> Vec<String> {
     cal
 }
 
-fn draw_calendar(year: Year, month: Month, nmons: u8) -> String {
-    todo!()
+fn draw_calendar(year: Year, month: Month, nmons: usize) -> String {
+    let mut cals = Vec::new();
+
+    let mut y = year;
+    let mut m = month;
+    for _ in 0..nmons {
+        cals.push(calendar_month(y, m));
+        m += 1;
+        if m > 12 {
+            m -= 12;
+            y += 1;
+        }
+    }
+
+    cals.chunks(3)
+        .map(|cs| {
+            (0..cs[0].len())
+                .map(|i| {
+                    cs.iter()
+                        .map(|c| c[i].to_string())
+                        .collect::<Vec<_>>()
+                        .join(" ")
+                })
+                .collect::<Vec<_>>()
+                .join("\n")
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 #[cfg(test)]
@@ -133,6 +159,78 @@ mod tests {
                 "27 28 29 30          ",
                 "                     "
             ]
+        );
+    }
+
+    #[test]
+    fn draw_single_month() {
+        assert_eq!(
+            draw_calendar(2022, 11, 1),
+            "\
+\x20   November 2022    \n\
+   Su Mo Tu We Th Fr Sa \n\
+\x20      1  2  3  4  5 \n\
+\x206  7  8  9 10 11 12 \n\
+   13 14 15 16 17 18 19 \n\
+   20 21 22 23 24 25 26 \n\
+   27 28 29 30          \n\
+\x20                    "
+        );
+    }
+
+    #[test]
+    fn draw_three_months() {
+        assert_eq!(
+            draw_calendar(2022, 10, 3),
+            "\
+\x20   October 2022          November 2022         December 2022    \n\
+   Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa \n\
+\x20                  1         1  2  3  4  5               1  2  3 \n\
+\x202  3  4  5  6  7  8   6  7  8  9 10 11 12   4  5  6  7  8  9 10 \n\
+\x209 10 11 12 13 14 15  13 14 15 16 17 18 19  11 12 13 14 15 16 17 \n\
+   16 17 18 19 20 21 22  20 21 22 23 24 25 26  18 19 20 21 22 23 24 \n\
+   23 24 25 26 27 28 29  27 28 29 30           25 26 27 28 29 30 31 \n\
+   30 31                                                            "
+        );
+    }
+
+    #[test]
+    fn draw_year() {
+        assert_eq!(
+            draw_calendar(2022, 1, 12),
+            "\
+\x20   January 2022          February 2022          March 2022      \n\
+   Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa \n\
+\x20                  1         1  2  3  4  5         1  2  3  4  5 \n\
+\x202  3  4  5  6  7  8   6  7  8  9 10 11 12   6  7  8  9 10 11 12 \n\
+\x209 10 11 12 13 14 15  13 14 15 16 17 18 19  13 14 15 16 17 18 19 \n\
+   16 17 18 19 20 21 22  20 21 22 23 24 25 26  20 21 22 23 24 25 26 \n\
+   23 24 25 26 27 28 29  27 28                 27 28 29 30 31       \n\
+   30 31                                                            \n\
+\x20    April 2022             May 2022              June 2022      \n\
+   Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa \n\
+\x20               1  2   1  2  3  4  5  6  7            1  2  3  4 \n\
+\x203  4  5  6  7  8  9   8  9 10 11 12 13 14   5  6  7  8  9 10 11 \n\
+   10 11 12 13 14 15 16  15 16 17 18 19 20 21  12 13 14 15 16 17 18 \n\
+   17 18 19 20 21 22 23  22 23 24 25 26 27 28  19 20 21 22 23 24 25 \n\
+   24 25 26 27 28 29 30  29 30 31              26 27 28 29 30       \n\
+\x20                                                                \n\
+\x20     July 2022            August 2022         September 2022    \n\
+   Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa \n\
+\x20               1  2      1  2  3  4  5  6               1  2  3 \n\
+\x203  4  5  6  7  8  9   7  8  9 10 11 12 13   4  5  6  7  8  9 10 \n\
+   10 11 12 13 14 15 16  14 15 16 17 18 19 20  11 12 13 14 15 16 17 \n\
+   17 18 19 20 21 22 23  21 22 23 24 25 26 27  18 19 20 21 22 23 24 \n\
+   24 25 26 27 28 29 30  28 29 30 31           25 26 27 28 29 30    \n\
+   31                                                               \n\
+\x20   October 2022          November 2022         December 2022    \n\
+   Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa \n\
+\x20                  1         1  2  3  4  5               1  2  3 \n\
+\x202  3  4  5  6  7  8   6  7  8  9 10 11 12   4  5  6  7  8  9 10 \n\
+\x209 10 11 12 13 14 15  13 14 15 16 17 18 19  11 12 13 14 15 16 17 \n\
+   16 17 18 19 20 21 22  20 21 22 23 24 25 26  18 19 20 21 22 23 24 \n\
+   23 24 25 26 27 28 29  27 28 29 30           25 26 27 28 29 30 31 \n\
+   30 31                                                            "
         );
     }
 }
