@@ -35,26 +35,8 @@ fn day_of_week(year: Year, month: Month, dom: u8) -> Weekday {
     ((dom as u32 + y + y / 4 - y / 100 + y / 400 + 31 * m / 12) % 7) as u8
 }
 
-fn calendar_line(year: Year, month: Month, line: u8) -> String {
-    let mut ret = String::new();
-
-    let month_length = month_length(year, month);
-    let weekday_of_first = day_of_week(year, month, 1);
-    let start = 1 - weekday_of_first as i8 + 7 * (line as i8 - 1);
-    for d in start..start + 7 {
-        let s = if d >= 1 && d <= month_length as i8 {
-            format!("{:>2} ", d)
-        } else {
-            String::from("   ")
-        };
-        ret.push_str(&s);
-    }
-
-    ret
-}
-
-fn draw_calendar(year: Year, month: Month, nmons: u8) -> String {
-    const SMON: [&'static str; 13] = [
+fn month_year_header(year: Year, month: Month) -> String {
+    const SMON: [&str; 13] = [
         "",
         "January",
         "February",
@@ -69,7 +51,36 @@ fn draw_calendar(year: Year, month: Month, nmons: u8) -> String {
         "November",
         "December",
     ];
-    const SWEEK: &'static str = "Su Mo Tu We Th Fr Sa ";
+
+    let header = format!("{} {}", SMON[month as usize], year);
+    format!("{:^21}", header)
+}
+
+fn calendar_month(year: Year, month: Month) -> Vec<String> {
+    let mut cal = Vec::new();
+    cal.push(month_year_header(year, month));
+    cal.push(String::from("Su Mo Tu We Th Fr Sa "));
+
+    let month_length = month_length(year, month);
+    let weekday_of_first = day_of_week(year, month, 1);
+    for nline in 1..=6 {
+        let mut line = String::new();
+        let start = 1 - weekday_of_first as i8 + 7 * (nline - 1);
+        for d in start..start + 7 {
+            let s = if d >= 1 && d <= month_length as i8 {
+                format!("{:>2} ", d)
+            } else {
+                String::from("   ")
+            };
+            line.push_str(&s);
+        }
+        cal.push(line);
+    }
+
+    cal
+}
+
+fn draw_calendar(year: Year, month: Month, nmons: u8) -> String {
     todo!()
 }
 
@@ -102,30 +113,26 @@ mod tests {
     }
 
     #[test]
-    fn test_calendar_line() {
+    fn test_header() {
+        assert_eq!(month_year_header(2022, 1), "    January 2022     ");
+        assert_eq!(month_year_header(2022, 2), "    February 2022    ");
+        assert_eq!(month_year_header(2022, 3), "     March 2022      ");
+    }
+
+    #[test]
+    fn test_calendar_month() {
         assert_eq!(
-            calendar_line(2022, 11, 1),
-            String::from("       1  2  3  4  5 ")
-        );
-        assert_eq!(
-            calendar_line(2022, 11, 2),
-            String::from(" 6  7  8  9 10 11 12 ")
-        );
-        assert_eq!(
-            calendar_line(2022, 11, 3),
-            String::from("13 14 15 16 17 18 19 ")
-        );
-        assert_eq!(
-            calendar_line(2022, 11, 4),
-            String::from("20 21 22 23 24 25 26 ")
-        );
-        assert_eq!(
-            calendar_line(2022, 11, 5),
-            String::from("27 28 29 30          ")
-        );
-        assert_eq!(
-            calendar_line(2022, 11, 6),
-            String::from("                     ")
+            calendar_month(2022, 11),
+            [
+                "    November 2022    ",
+                "Su Mo Tu We Th Fr Sa ",
+                "       1  2  3  4  5 ",
+                " 6  7  8  9 10 11 12 ",
+                "13 14 15 16 17 18 19 ",
+                "20 21 22 23 24 25 26 ",
+                "27 28 29 30          ",
+                "                     "
+            ]
         );
     }
 }
