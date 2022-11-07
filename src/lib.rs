@@ -80,21 +80,21 @@ fn calendar_month(year: Year, month: Month) -> Vec<String> {
     cal
 }
 
-fn draw_calendar(year: Year, month: Month, nmons: usize) -> String {
-    let mut cals = Vec::new();
+fn span_months(
+    year: Year,
+    month: Month,
+    nmons: u8,
+) -> impl Iterator<Item = (Year, Month)> {
+    (0..nmons).map(move |n| {
+        (year + (month + n - 1) as u32 / 12, (month + n - 1) % 12 + 1)
+    })
+}
 
-    let mut y = year;
-    let mut m = month;
-    for _ in 0..nmons {
-        cals.push(calendar_month(y, m));
-        m += 1;
-        if m > 12 {
-            m -= 12;
-            y += 1;
-        }
-    }
-
-    cals.chunks(3)
+fn draw_calendar(year: Year, month: Month, nmons: u8) -> String {
+    span_months(year, month, nmons)
+        .map(|(y, m)| calendar_month(y, m))
+        .collect::<Vec<_>>()
+        .chunks(3)
         .map(|cs| {
             (0..cs[0].len())
                 .map(|i| {
@@ -158,6 +158,30 @@ mod tests {
                 "20 21 22 23 24 25 26 ",
                 "27 28 29 30          ",
                 "                     "
+            ]
+        );
+    }
+
+    #[test]
+    fn test_span_months() {
+        let yms: Vec<_> = span_months(2022, 12, 14).collect();
+        assert_eq!(
+            yms,
+            [
+                (2022, 12),
+                (2023, 1),
+                (2023, 2),
+                (2023, 3),
+                (2023, 4),
+                (2023, 5),
+                (2023, 6),
+                (2023, 7),
+                (2023, 8),
+                (2023, 9),
+                (2023, 10),
+                (2023, 11),
+                (2023, 12),
+                (2024, 1),
             ]
         );
     }
