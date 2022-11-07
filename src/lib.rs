@@ -43,7 +43,7 @@ fn calendar_line(year: Year, month: Month, line: u8) -> String {
     let start = 1 - weekday_of_first as i8 + 7 * (line as i8 - 1);
     for d in start..start + 7 {
         let s = if d >= 1 && d <= month_length as i8 {
-            format!("{:>3}", d)
+            format!("{:>2} ", d)
         } else {
             String::from("   ")
         };
@@ -85,23 +85,23 @@ mod tests {
     fn test_calendar_line() {
         assert_eq!(
             calendar_line(2022, 11, 1),
-            String::from("        1  2  3  4  5")
+            String::from("       1  2  3  4  5 ")
         );
         assert_eq!(
             calendar_line(2022, 11, 2),
-            String::from("  6  7  8  9 10 11 12")
+            String::from(" 6  7  8  9 10 11 12 ")
         );
         assert_eq!(
             calendar_line(2022, 11, 3),
-            String::from(" 13 14 15 16 17 18 19")
+            String::from("13 14 15 16 17 18 19 ")
         );
         assert_eq!(
             calendar_line(2022, 11, 4),
-            String::from(" 20 21 22 23 24 25 26")
+            String::from("20 21 22 23 24 25 26 ")
         );
         assert_eq!(
             calendar_line(2022, 11, 5),
-            String::from(" 27 28 29 30         ")
+            String::from("27 28 29 30          ")
         );
         assert_eq!(
             calendar_line(2022, 11, 6),
