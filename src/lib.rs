@@ -53,6 +53,26 @@ fn calendar_line(year: Year, month: Month, line: u8) -> String {
     ret
 }
 
+fn draw_calendar(year: Year, month: Month, nmons: u8) -> String {
+    const SMON: [&'static str; 13] = [
+        "",
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ];
+    const SWEEK: &'static str = "Su Mo Tu We Th Fr Sa ";
+    todo!()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
