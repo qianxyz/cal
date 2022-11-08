@@ -1,113 +1,160 @@
 type Year = u32;
-type Month = u8; // 1 = January, ...
-type Weekday = u8; // 0 = Sunday, ...
+type Month = u8; /* 1 = January, ... */
+type Weekday = u8; /* 0 = Sunday, ... */
 
-fn is_leap(year: Year) -> bool {
-    if year % 400 == 0 {
-        true
-    } else if year % 100 == 0 {
-        false
-    } else {
-        year % 4 == 0
+const WEEK_HEADER: &str = "Su Mo Tu We Th Fr Sa ";
+const MONTH_WIDTH: usize = 21;
+const DAY_ROWS: u8 = 6;
+const MONTH_COLS: usize = 3;
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+struct YearMonth(Year, Month);
+
+impl YearMonth {
+    pub fn new(year: Year, month: Month) -> Self {
+        assert!((1..=12).contains(&month));
+        Self(year, month)
     }
-}
 
-fn month_length(year: Year, month: Month) -> u8 {
-    match month {
-        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
-        4 | 6 | 9 | 11 => 30,
-        2 => {
-            if is_leap(year) {
-                29
-            } else {
-                28
+    fn year(&self) -> Year {
+        self.0
+    }
+
+    fn month(&self) -> Month {
+        self.1
+    }
+
+    fn is_leap_year(&self) -> bool {
+        match self.year() {
+            y if y % 400 == 0 => true,
+            y if y % 100 == 0 => false,
+            y => y % 4 == 0,
+        }
+    }
+
+    fn num_of_days(&self) -> u8 {
+        match self.month() {
+            1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+            4 | 6 | 9 | 11 => 30,
+            2 => {
+                if self.is_leap_year() {
+                    29
+                } else {
+                    28
+                }
             }
+            _ => unreachable!(),
         }
-        _ => unreachable!(),
-    }
-}
-
-fn day_of_week(year: Year, month: Month, dom: u8) -> Weekday {
-    let a: u32 = (14 - month as u32) / 12;
-    let y: u32 = year - a;
-    let m: u32 = month as u32 + 12 * a - 2;
-
-    ((dom as u32 + y + y / 4 - y / 100 + y / 400 + 31 * m / 12) % 7) as u8
-}
-
-fn month_year_header(year: Year, month: Month) -> String {
-    let smon = match month {
-        1 => "January",
-        2 => "February",
-        3 => "March",
-        4 => "April",
-        5 => "May",
-        6 => "June",
-        7 => "July",
-        8 => "August",
-        9 => "September",
-        10 => "October",
-        11 => "November",
-        12 => "December",
-        _ => unreachable!(),
-    };
-
-    let header = format!("{} {}", smon, year);
-    format!("{:^21}", header)
-}
-
-fn calendar_month(year: Year, month: Month) -> Vec<String> {
-    let mut cal = Vec::new();
-    cal.push(month_year_header(year, month));
-    cal.push(String::from("Su Mo Tu We Th Fr Sa "));
-
-    let month_length = month_length(year, month);
-    let weekday_of_first = day_of_week(year, month, 1);
-    for nline in 1..=6 {
-        let mut line = String::new();
-        let start = 1 - weekday_of_first as i8 + 7 * (nline - 1);
-        for d in start..start + 7 {
-            let s = if d >= 1 && d <= month_length as i8 {
-                format!("{:>2} ", d)
-            } else {
-                String::from("   ")
-            };
-            line.push_str(&s);
-        }
-        cal.push(line);
     }
 
-    cal
-}
+    fn weekday_of_first(&self) -> Weekday {
+        let a: u32 = (14 - self.month() as u32) / 12;
+        let y: u32 = self.year() - a;
+        let m: u32 = self.month() as u32 + 12 * a - 2;
 
-fn span_months(
-    year: Year,
-    month: Month,
-    nmons: u8,
-) -> impl Iterator<Item = (Year, Month)> {
-    (0..nmons).map(move |n| {
-        (year + (month + n - 1) as u32 / 12, (month + n - 1) % 12 + 1)
-    })
-}
+        ((1 + y + y / 4 - y / 100 + y / 400 + 31 * m / 12) % 7) as u8
+    }
 
-fn draw_calendar(year: Year, month: Month, nmons: u8) -> String {
-    span_months(year, month, nmons)
-        .map(|(y, m)| calendar_month(y, m))
-        .collect::<Vec<_>>()
-        .chunks(3)
-        .map(|cs| {
-            (0..cs[0].len())
-                .map(|i| {
-                    cs.iter()
-                        .map(|c| c[i].to_string())
-                        .collect::<Vec<_>>()
-                        .join(" ")
+    fn header(&self) -> String {
+        let smon = match self.month() {
+            1 => "January",
+            2 => "February",
+            3 => "March",
+            4 => "April",
+            5 => "May",
+            6 => "June",
+            7 => "July",
+            8 => "August",
+            9 => "September",
+            10 => "October",
+            11 => "November",
+            12 => "December",
+            _ => unreachable!(),
+        };
+
+        let header = format!("{} {}", smon, self.year());
+        format!("{:^1$}", header, MONTH_WIDTH)
+    }
+
+    fn day_matrix(&self) -> impl Iterator<Item = String> {
+        let start = 1 - self.weekday_of_first() as i8;
+        let month_length = self.num_of_days() as i8;
+        (0..DAY_ROWS as i8).map(move |n| {
+            (start + 7 * n..start + 7 * n + 7)
+                .map(|d| {
+                    if 1 <= d && d <= month_length {
+                        format!("{:>2} ", d)
+                    } else {
+                        String::from("   ")
+                    }
                 })
                 .collect::<Vec<_>>()
-                .join("\n")
+                .join("")
         })
-        .collect::<Vec<_>>()
-        .join("\n")
+    }
+
+    fn calendar(&self) -> Vec<String> {
+        let mut cal = Vec::new();
+        cal.push(self.header());
+        cal.push(String::from(WEEK_HEADER));
+        cal.extend(self.day_matrix());
+
+        cal
+    }
+}
+
+impl Iterator for YearMonth {
+    type Item = YearMonth;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let ret = *self;
+
+        self.1 += 1;
+        if self.1 > 12 {
+            self.1 -= 12;
+            self.0 += 1;
+        }
+
+        Some(ret)
+    }
+}
+
+struct MonthRange {
+    start: YearMonth,
+    len: usize,
+}
+
+impl MonthRange {
+    pub fn new(start: YearMonth, len: usize) -> Self {
+        Self { start, len }
+    }
+
+    fn format(&self) -> String {
+        self.start
+            .take(self.len)
+            .map(|ym| ym.calendar())
+            .collect::<Vec<_>>()
+            .chunks(MONTH_COLS)
+            .map(|cs| {
+                (0..cs[0].len())
+                    .map(|i| {
+                        cs.iter()
+                            .map(|c| c[i].to_string())
+                            .collect::<Vec<_>>()
+                            .join(" ")
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+}
+
+impl std::fmt::Display for MonthRange {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.format())
+    }
 }
 
 #[cfg(test)]
@@ -115,40 +162,45 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_is_leap() {
-        assert!(is_leap(2000));
-        assert!(is_leap(2020));
-        assert!(!is_leap(2021));
-        assert!(!is_leap(2100));
+    fn leap_year() {
+        assert!(YearMonth(2000, 1).is_leap_year());
+        assert!(YearMonth(2020, 1).is_leap_year());
+        assert!(!YearMonth(2021, 1).is_leap_year());
+        assert!(!YearMonth(2100, 1).is_leap_year());
     }
 
     #[test]
-    fn test_month_length() {
-        assert_eq!(month_length(2020, 1), 31);
-        assert_eq!(month_length(2020, 2), 29);
-        assert_eq!(month_length(2020, 4), 30);
-        assert_eq!(month_length(2021, 2), 28);
+    fn month_length() {
+        assert_eq!(YearMonth(2020, 1).num_of_days(), 31);
+        assert_eq!(YearMonth(2020, 2).num_of_days(), 29);
+        assert_eq!(YearMonth(2020, 4).num_of_days(), 30);
+        assert_eq!(YearMonth(2021, 2).num_of_days(), 28);
     }
 
     #[test]
-    fn test_day_of_week() {
-        assert_eq!(day_of_week(2022, 11, 6), 0);
-        assert_eq!(day_of_week(2022, 11, 7), 1);
-        assert_eq!(day_of_week(2022, 11, 8), 2);
-        assert_eq!(day_of_week(2022, 11, 13), 0);
+    fn weekday_of_first() {
+        assert_eq!(YearMonth(2022, 11).weekday_of_first(), 2);
+        assert_eq!(YearMonth(2022, 12).weekday_of_first(), 4);
+        assert_eq!(YearMonth(2023, 1).weekday_of_first(), 0);
+        assert_eq!(YearMonth(2023, 2).weekday_of_first(), 3);
     }
 
     #[test]
-    fn test_header() {
-        assert_eq!(month_year_header(2022, 1), "    January 2022     ");
-        assert_eq!(month_year_header(2022, 2), "    February 2022    ");
-        assert_eq!(month_year_header(2022, 3), "     March 2022      ");
+    fn header() {
+        assert_eq!(YearMonth(2022, 1).header(), "    January 2022     ");
+        assert_eq!(YearMonth(2022, 2).header(), "    February 2022    ");
+        assert_eq!(YearMonth(2022, 3).header(), "     March 2022      ");
     }
 
     #[test]
-    fn test_calendar_month() {
+    fn iter_month() {
+        todo!()
+    }
+
+    #[test]
+    fn calendar_vec() {
         assert_eq!(
-            calendar_month(2022, 11),
+            YearMonth(2022, 11).calendar(),
             [
                 "    November 2022    ",
                 "Su Mo Tu We Th Fr Sa ",
@@ -163,33 +215,9 @@ mod tests {
     }
 
     #[test]
-    fn test_span_months() {
-        let yms: Vec<_> = span_months(2022, 12, 14).collect();
-        assert_eq!(
-            yms,
-            [
-                (2022, 12),
-                (2023, 1),
-                (2023, 2),
-                (2023, 3),
-                (2023, 4),
-                (2023, 5),
-                (2023, 6),
-                (2023, 7),
-                (2023, 8),
-                (2023, 9),
-                (2023, 10),
-                (2023, 11),
-                (2023, 12),
-                (2024, 1),
-            ]
-        );
-    }
-
-    #[test]
     fn draw_single_month() {
         assert_eq!(
-            draw_calendar(2022, 11, 1),
+            MonthRange::new(YearMonth(2022, 11), 1).format(),
             "\
 \x20   November 2022    \n\
    Su Mo Tu We Th Fr Sa \n\
@@ -203,25 +231,25 @@ mod tests {
     }
 
     #[test]
-    fn draw_three_months() {
+    fn draw_two_months() {
         assert_eq!(
-            draw_calendar(2022, 10, 3),
+            MonthRange::new(YearMonth(2022, 11), 2).format(),
             "\
-\x20   October 2022          November 2022         December 2022    \n\
-   Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa \n\
-\x20                  1         1  2  3  4  5               1  2  3 \n\
-\x202  3  4  5  6  7  8   6  7  8  9 10 11 12   4  5  6  7  8  9 10 \n\
-\x209 10 11 12 13 14 15  13 14 15 16 17 18 19  11 12 13 14 15 16 17 \n\
-   16 17 18 19 20 21 22  20 21 22 23 24 25 26  18 19 20 21 22 23 24 \n\
-   23 24 25 26 27 28 29  27 28 29 30           25 26 27 28 29 30 31 \n\
-   30 31                                                            "
+\x20   November 2022         December 2022    \n\
+   Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa \n\
+\x20      1  2  3  4  5               1  2  3 \n\
+\x206  7  8  9 10 11 12   4  5  6  7  8  9 10 \n\
+   13 14 15 16 17 18 19  11 12 13 14 15 16 17 \n\
+   20 21 22 23 24 25 26  18 19 20 21 22 23 24 \n\
+   27 28 29 30           25 26 27 28 29 30 31 \n\
+\x20                                          "
         );
     }
 
     #[test]
     fn draw_year() {
         assert_eq!(
-            draw_calendar(2022, 1, 12),
+            MonthRange::new(YearMonth(2022, 1), 12).format(),
             "\
 \x20   January 2022          February 2022          March 2022      \n\
    Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa \n\
