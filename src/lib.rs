@@ -101,21 +101,37 @@ impl YearMonth {
 
         cal
     }
+
+    fn prev_month(&self) -> Self {
+        if self.month() == 1 {
+            YearMonth(self.year() - 1, 12)
+        } else {
+            YearMonth(self.year(), self.month() - 1)
+        }
+    }
+
+    fn next_month(&self) -> Self {
+        if self.month() == 12 {
+            YearMonth(self.year() + 1, 1)
+        } else {
+            YearMonth(self.year(), self.month() + 1)
+        }
+    }
+
+    fn iter(&self) -> YearMonthIter {
+        YearMonthIter(*self)
+    }
 }
 
-impl Iterator for YearMonth {
+struct YearMonthIter(YearMonth);
+
+impl Iterator for YearMonthIter {
     type Item = YearMonth;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let ret = *self;
-
-        self.1 += 1;
-        if self.1 > 12 {
-            self.1 -= 12;
-            self.0 += 1;
-        }
-
-        Some(ret)
+        let cur = self.0;
+        self.0 = cur.next_month();
+        Some(cur)
     }
 }
 
@@ -131,6 +147,7 @@ impl MonthRange {
 
     fn format(&self) -> String {
         self.start
+            .iter()
             .take(self.len)
             .map(|ym| ym.calendar())
             .collect::<Vec<_>>()
@@ -193,8 +210,21 @@ mod tests {
     }
 
     #[test]
+    fn prev_next_month() {
+        assert_eq!(YearMonth(2022, 11).prev_month(), YearMonth(2022, 10));
+        assert_eq!(YearMonth(2022, 11).next_month(), YearMonth(2022, 12));
+        assert_eq!(YearMonth(2023, 1).prev_month(), YearMonth(2022, 12));
+        assert_eq!(YearMonth(2022, 12).next_month(), YearMonth(2023, 1));
+    }
+
+    #[test]
     fn iter_month() {
-        todo!()
+        let mut iter = YearMonth(2021, 12).iter();
+        assert_eq!(iter.next(), Some(YearMonth(2021, 12)));
+        for m in 1..=12 {
+            assert_eq!(iter.next(), Some(YearMonth(2022, m)));
+        }
+        assert_eq!(iter.next(), Some(YearMonth(2023, 1)));
     }
 
     #[test]
