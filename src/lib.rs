@@ -1,5 +1,5 @@
-type Year = u32;
-type Month = u8; /* 1 = January, ... */
+pub type Year = u32;
+pub type Month = u8; /* 1 = January, ... */
 type Weekday = u8; /* 0 = Sunday, ... */
 
 const WEEK_HEADER: &str = "Su Mo Tu We Th Fr Sa ";
@@ -7,8 +7,8 @@ const MONTH_WIDTH: usize = 21;
 const DAY_ROWS: u8 = 6;
 const MONTH_COLS: usize = 3;
 
-#[derive(Debug, PartialEq, Clone, Copy)]
-struct YearMonth(Year, Month);
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct YearMonth(Year, Month);
 
 impl YearMonth {
     pub fn new(year: Year, month: Month) -> Self {
@@ -102,7 +102,7 @@ impl YearMonth {
         cal
     }
 
-    fn prev_month(&self) -> Self {
+    pub fn prev_month(&self) -> Self {
         if self.month() == 1 {
             YearMonth(self.year() - 1, 12)
         } else {
@@ -135,12 +135,12 @@ impl Iterator for YearMonthIter {
     }
 }
 
-struct MonthRange {
+pub struct CalRange {
     start: YearMonth,
     len: usize,
 }
 
-impl MonthRange {
+impl CalRange {
     pub fn new(start: YearMonth, len: usize) -> Self {
         Self { start, len }
     }
@@ -168,7 +168,7 @@ impl MonthRange {
     }
 }
 
-impl std::fmt::Display for MonthRange {
+impl std::fmt::Display for CalRange {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.format())
     }
@@ -247,7 +247,7 @@ mod tests {
     #[test]
     fn draw_single_month() {
         assert_eq!(
-            MonthRange::new(YearMonth(2022, 11), 1).format(),
+            CalRange::new(YearMonth(2022, 11), 1).format(),
             "\
 \x20   November 2022    \n\
    Su Mo Tu We Th Fr Sa \n\
@@ -263,7 +263,7 @@ mod tests {
     #[test]
     fn draw_two_months() {
         assert_eq!(
-            MonthRange::new(YearMonth(2022, 11), 2).format(),
+            CalRange::new(YearMonth(2022, 11), 2).format(),
             "\
 \x20   November 2022         December 2022    \n\
    Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa \n\
@@ -279,7 +279,7 @@ mod tests {
     #[test]
     fn draw_year() {
         assert_eq!(
-            MonthRange::new(YearMonth(2022, 1), 12).format(),
+            CalRange::new(YearMonth(2022, 1), 12).format(),
             "\
 \x20   January 2022          February 2022          March 2022      \n\
    Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa \n\
