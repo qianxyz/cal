@@ -102,14 +102,6 @@ impl YearMonth {
         cal
     }
 
-    pub fn prev_month(&self) -> Self {
-        if self.month() == 1 {
-            YearMonth(self.year() - 1, 12)
-        } else {
-            YearMonth(self.year(), self.month() - 1)
-        }
-    }
-
     fn next_month(&self) -> Self {
         if self.month() == 12 {
             YearMonth(self.year() + 1, 1)
@@ -207,14 +199,6 @@ mod tests {
         assert_eq!(YearMonth(2022, 1).header(), "    January 2022     ");
         assert_eq!(YearMonth(2022, 2).header(), "    February 2022    ");
         assert_eq!(YearMonth(2022, 3).header(), "     March 2022      ");
-    }
-
-    #[test]
-    fn prev_next_month() {
-        assert_eq!(YearMonth(2022, 11).prev_month(), YearMonth(2022, 10));
-        assert_eq!(YearMonth(2022, 11).next_month(), YearMonth(2022, 12));
-        assert_eq!(YearMonth(2023, 1).prev_month(), YearMonth(2022, 12));
-        assert_eq!(YearMonth(2022, 12).next_month(), YearMonth(2023, 1));
     }
 
     #[test]

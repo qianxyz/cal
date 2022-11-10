@@ -37,7 +37,14 @@ fn main() {
     let month = cli.month.unwrap_or(now.month() as Month);
 
     let (start, len) = match (cli.len_1, cli.len_3, cli.len_y, cli.len_n) {
-        (_, true, _, _) => (YearMonth::new(year, month).prev_month(), 3),
+        (_, true, _, _) => (
+            if month == 1 {
+                YearMonth::new(year - 1, 12)
+            } else {
+                YearMonth::new(year, month - 1)
+            },
+            3,
+        ),
         (_, _, true, _) => (YearMonth::new(year, 1), 12),
         (_, _, _, Some(n)) => (YearMonth::new(year, month), n),
         _ => (YearMonth::new(year, month), 1),
