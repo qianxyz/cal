@@ -18,6 +18,10 @@ struct Cli {
     #[arg(group = "len", short = 'y', long = "year")]
     len_y: bool,
 
+    /// show the next twelve months
+    #[arg(group = "len", short = 'Y', long = "twelve")]
+    len_12: bool,
+
     /// show NUM months starting with date's month
     #[arg(group = "len", short = 'n', long = "months", value_name = "NUM")]
     len_n: Option<usize>,
@@ -36,18 +40,23 @@ fn main() {
     let year = cli.year.unwrap_or(now.year() as Year);
     let month = cli.month.unwrap_or(now.month() as Month);
 
-    let (start, len) = match (cli.len_1, cli.len_3, cli.len_y, cli.len_n) {
-        (_, true, _, _) => (
+    let (start, len) = if cli.len_3 {
+        (
             if month == 1 {
                 YearMonth::new(year - 1, 12)
             } else {
                 YearMonth::new(year, month - 1)
             },
             3,
-        ),
-        (_, _, true, _) => (YearMonth::new(year, 1), 12),
-        (_, _, _, Some(n)) => (YearMonth::new(year, month), n),
-        _ => (YearMonth::new(year, month), 1),
+        )
+    } else if cli.len_y {
+        (YearMonth::new(year, 1), 12)
+    } else if cli.len_12 {
+        (YearMonth::new(year, month), 12)
+    } else if let Some(n) = cli.len_n {
+        (YearMonth::new(year, month), n)
+    } else {
+        (YearMonth::new(year, month), 1)
     };
 
     let cal = CalRange::new(start, len);
