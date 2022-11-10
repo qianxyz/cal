@@ -30,6 +30,18 @@ struct Cli {
     #[arg(short = 'S', long)]
     span: bool,
 
+    /// Sunday as first day of week (default)
+    #[arg(group = "fday", short = 's', long = "sunday")]
+    fday_s: bool,
+
+    /// Monday as first day of week
+    #[arg(group = "fday", short = 'm', long = "monday")]
+    fday_m: bool,
+
+    /// set first day of week (Sunday = 0, Monday = 1, ...)
+    #[arg(group = "fday", short = 'f', long = "first", value_name = "0-6")]
+    fday_n: Option<u8>,
+
     /// defaults to current year
     year: Option<Year>,
 
@@ -69,6 +81,13 @@ fn main() {
     };
 
     let span = cli.len_3 || cli.span;
+
+    let fday = match (cli.fday_s, cli.fday_m, cli.fday_n) {
+        (_, true, _) => 1,
+        (_, _, Some(n)) => n,
+        _ => 0,
+    };
+    println!("first day of week: {}", fday);
 
     let cal = Calendar::new(origin, len, span);
 
