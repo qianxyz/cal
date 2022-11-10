@@ -40,26 +40,26 @@ fn main() {
     let year = cli.year.unwrap_or(now.year() as Year);
     let month = cli.month.unwrap_or(now.month() as Month);
 
-    let (start, len) = if cli.len_3 {
-        (
-            if month == 1 {
-                YearMonth::new(year - 1, 12)
-            } else {
-                YearMonth::new(year, month - 1)
-            },
-            3,
-        )
+    let (start, len) = if cli.len_1 {
+        (YearMonth::new(year, month), 1)
+    } else if cli.len_3 {
+        todo!("span")
     } else if cli.len_y {
         (YearMonth::new(year, 1), 12)
     } else if cli.len_12 {
         (YearMonth::new(year, month), 12)
     } else if let Some(n) = cli.len_n {
-        (YearMonth::new(year, month), n)
+        (YearMonth::new(year, month), std::cmp::max(n, 1))
     } else {
-        (YearMonth::new(year, month), 1)
+        /* special case: `cal YEAR` should print whole year calendar */
+        if cli.year.is_some() && cli.month.is_none() {
+            (YearMonth::new(year, 1), 12)
+        } else {
+            (YearMonth::new(year, month), 1)
+        }
     };
 
-    let cal = CalRange::new(start, len);
+    let cal = Calendar::new(start, len);
 
     println!("{}", cal);
 }

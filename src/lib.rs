@@ -127,12 +127,12 @@ impl Iterator for YearMonthIter {
     }
 }
 
-pub struct CalRange {
+pub struct Calendar {
     start: YearMonth,
     len: usize,
 }
 
-impl CalRange {
+impl Calendar {
     pub fn new(start: YearMonth, len: usize) -> Self {
         Self { start, len }
     }
@@ -160,7 +160,7 @@ impl CalRange {
     }
 }
 
-impl std::fmt::Display for CalRange {
+impl std::fmt::Display for Calendar {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.format())
     }
@@ -231,7 +231,7 @@ mod tests {
     #[test]
     fn draw_single_month() {
         assert_eq!(
-            CalRange::new(YearMonth(2022, 11), 1).format(),
+            Calendar::new(YearMonth(2022, 11), 1).format(),
             "\
 \x20   November 2022    \n\
    Su Mo Tu We Th Fr Sa \n\
@@ -247,7 +247,7 @@ mod tests {
     #[test]
     fn draw_two_months() {
         assert_eq!(
-            CalRange::new(YearMonth(2022, 11), 2).format(),
+            Calendar::new(YearMonth(2022, 11), 2).format(),
             "\
 \x20   November 2022         December 2022    \n\
    Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa \n\
@@ -263,7 +263,7 @@ mod tests {
     #[test]
     fn draw_year() {
         assert_eq!(
-            CalRange::new(YearMonth(2022, 1), 12).format(),
+            Calendar::new(YearMonth(2022, 1), 12).format(),
             "\
 \x20   January 2022          February 2022          March 2022      \n\
    Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa \n\
