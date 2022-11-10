@@ -1,4 +1,4 @@
-use cal::*;
+use carender::*;
 
 use chrono::{Datelike, Local};
 use clap::Parser;
