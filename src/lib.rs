@@ -102,6 +102,14 @@ impl YearMonth {
         cal
     }
 
+    fn prev_month(&self) -> Self {
+        if self.month() == 1 {
+            YearMonth(self.year() - 1, 12)
+        } else {
+            YearMonth(self.year(), self.month() - 1)
+        }
+    }
+
     fn next_month(&self) -> Self {
         if self.month() == 12 {
             YearMonth(self.year() + 1, 1)
@@ -128,19 +136,28 @@ impl Iterator for YearMonthIter {
 }
 
 pub struct Calendar {
-    start: YearMonth,
+    origin: YearMonth,
     len: usize,
+    span: bool,
 }
 
 impl Calendar {
-    pub fn new(start: YearMonth, len: usize) -> Self {
-        Self { start, len }
+    pub fn new(origin: YearMonth, len: usize, span: bool) -> Self {
+        Self { origin, len, span }
+    }
+
+    fn months(&self) -> impl Iterator<Item = YearMonth> {
+        let mut start = self.origin;
+        if self.span {
+            for _ in 0..self.len / 2 {
+                start = start.prev_month();
+            }
+        }
+        start.iter().take(self.len)
     }
 
     fn format(&self) -> String {
-        self.start
-            .iter()
-            .take(self.len)
+        self.months()
             .map(|ym| ym.calendar())
             .collect::<Vec<_>>()
             .chunks(MONTH_COLS)
@@ -202,6 +219,14 @@ mod tests {
     }
 
     #[test]
+    fn prev_next_month() {
+        assert_eq!(YearMonth(2022, 11).prev_month(), YearMonth(2022, 10));
+        assert_eq!(YearMonth(2022, 11).next_month(), YearMonth(2022, 12));
+        assert_eq!(YearMonth(2022, 1).prev_month(), YearMonth(2021, 12));
+        assert_eq!(YearMonth(2022, 12).next_month(), YearMonth(2023, 1));
+    }
+
+    #[test]
     fn iter_month() {
         let mut iter = YearMonth(2021, 12).iter();
         assert_eq!(iter.next(), Some(YearMonth(2021, 12)));
@@ -229,9 +254,29 @@ mod tests {
     }
 
     #[test]
+    fn month_iter() {
+        let cal = Calendar::new(YearMonth(2022, 11), 3, false);
+        let mut iter = cal.months();
+        assert_eq!(iter.next(), Some(YearMonth(2022, 11)));
+        assert_eq!(iter.next(), Some(YearMonth(2022, 12)));
+        assert_eq!(iter.next(), Some(YearMonth(2023, 1)));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn month_iter_with_span() {
+        let cal = Calendar::new(YearMonth(2022, 11), 3, true);
+        let mut iter = cal.months();
+        assert_eq!(iter.next(), Some(YearMonth(2022, 10)));
+        assert_eq!(iter.next(), Some(YearMonth(2022, 11)));
+        assert_eq!(iter.next(), Some(YearMonth(2022, 12)));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
     fn draw_single_month() {
         assert_eq!(
-            Calendar::new(YearMonth(2022, 11), 1).format(),
+            Calendar::new(YearMonth(2022, 11), 1, false).format(),
             "\
 \x20   November 2022    \n\
    Su Mo Tu We Th Fr Sa \n\
@@ -247,7 +292,7 @@ mod tests {
     #[test]
     fn draw_two_months() {
         assert_eq!(
-            Calendar::new(YearMonth(2022, 11), 2).format(),
+            Calendar::new(YearMonth(2022, 11), 2, false).format(),
             "\
 \x20   November 2022         December 2022    \n\
    Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa \n\
@@ -263,7 +308,7 @@ mod tests {
     #[test]
     fn draw_year() {
         assert_eq!(
-            Calendar::new(YearMonth(2022, 1), 12).format(),
+            Calendar::new(YearMonth(2022, 1), 12, false).format(),
             "\
 \x20   January 2022          February 2022          March 2022      \n\
    Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa \n\

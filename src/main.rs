@@ -26,6 +26,10 @@ struct Cli {
     #[arg(group = "len", short = 'n', long = "months", value_name = "NUM")]
     len_n: Option<usize>,
 
+    /// span the date when displaying multiple months
+    #[arg(short = 'S', long)]
+    span: bool,
+
     /// defaults to current year
     year: Option<Year>,
 
@@ -40,14 +44,19 @@ fn main() {
     let year = cli.year.unwrap_or(now.year() as Year);
     let month = cli.month.unwrap_or(now.month() as Month);
 
-    let (start, len) = if cli.len_1 {
+    let (origin, len) = if cli.len_1 {
         (YearMonth::new(year, month), 1)
     } else if cli.len_3 {
-        todo!("span")
+        (YearMonth::new(year, month), 3)
     } else if cli.len_y {
         (YearMonth::new(year, 1), 12)
     } else if cli.len_12 {
-        (YearMonth::new(year, month), 12)
+        /* special case: `cal -Y YEAR` should print whole year calendar */
+        if cli.year.is_some() && cli.month.is_none() {
+            (YearMonth::new(year, 1), 12)
+        } else {
+            (YearMonth::new(year, month), 12)
+        }
     } else if let Some(n) = cli.len_n {
         (YearMonth::new(year, month), std::cmp::max(n, 1))
     } else {
@@ -59,7 +68,9 @@ fn main() {
         }
     };
 
-    let cal = Calendar::new(start, len);
+    let span = cli.len_3 || cli.span;
+
+    let cal = Calendar::new(origin, len, span);
 
     println!("{}", cal);
 }
