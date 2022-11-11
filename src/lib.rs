@@ -2,9 +2,8 @@ pub type Year = u32;
 pub type Month = u8; /* 1 = January, ... */
 type Weekday = u8; /* 0 = Sunday, ... */
 
-const MONTH_WIDTH: usize = 21;
+pub const MONTH_WIDTH: usize = 21;
 const DAY_ROWS: u8 = 6;
-const MONTH_COLS: usize = 3;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct YearMonth(Year, Month);
@@ -148,16 +147,18 @@ pub struct Calendar {
     len: usize,
     span: bool,
     fday: Weekday,
+    column: usize,
 }
 
 impl Calendar {
-    pub fn new(origin: YearMonth, len: usize, span: bool, fday: Weekday) -> Self {
+    pub fn new(origin: YearMonth, len: usize, span: bool, fday: Weekday, column: usize) -> Self {
         assert!((0..7).contains(&fday));
         Self {
             origin,
             len,
             span,
             fday,
+            column,
         }
     }
 
@@ -175,7 +176,7 @@ impl Calendar {
         self.months()
             .map(|ym| ym.calendar(self.fday))
             .collect::<Vec<_>>()
-            .chunks(MONTH_COLS)
+            .chunks(self.column)
             .map(|cs| {
                 (0..cs[0].len())
                     .map(|i| {
@@ -307,7 +308,7 @@ mod tests {
 
     #[test]
     fn month_iter() {
-        let cal = Calendar::new(YearMonth(2022, 11), 3, false, 0);
+        let cal = Calendar::new(YearMonth(2022, 11), 3, false, 0, 1);
         let mut iter = cal.months();
         assert_eq!(iter.next(), Some(YearMonth(2022, 11)));
         assert_eq!(iter.next(), Some(YearMonth(2022, 12)));
@@ -317,7 +318,7 @@ mod tests {
 
     #[test]
     fn month_iter_with_span() {
-        let cal = Calendar::new(YearMonth(2022, 11), 3, true, 0);
+        let cal = Calendar::new(YearMonth(2022, 11), 3, true, 0, 1);
         let mut iter = cal.months();
         assert_eq!(iter.next(), Some(YearMonth(2022, 10)));
         assert_eq!(iter.next(), Some(YearMonth(2022, 11)));
@@ -328,7 +329,7 @@ mod tests {
     #[test]
     fn draw_single_month() {
         assert_eq!(
-            Calendar::new(YearMonth(2022, 11), 1, false, 0).format(),
+            Calendar::new(YearMonth(2022, 11), 1, false, 0, 1).format(),
             "\
 \x20   November 2022    \n\
    Su Mo Tu We Th Fr Sa \n\
@@ -344,7 +345,7 @@ mod tests {
     #[test]
     fn draw_two_months() {
         assert_eq!(
-            Calendar::new(YearMonth(2022, 11), 2, false, 0).format(),
+            Calendar::new(YearMonth(2022, 11), 2, false, 0, 3).format(),
             "\
 \x20   November 2022         December 2022    \n\
    Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa \n\
@@ -360,7 +361,7 @@ mod tests {
     #[test]
     fn draw_year() {
         assert_eq!(
-            Calendar::new(YearMonth(2022, 1), 12, false, 0).format(),
+            Calendar::new(YearMonth(2022, 1), 12, false, 0, 3).format(),
             "\
 \x20   January 2022          February 2022          March 2022      \n\
    Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa \n\

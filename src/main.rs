@@ -1,3 +1,5 @@
+use std::cmp;
+
 use carender::*;
 
 use chrono::{Datelike, Local};
@@ -42,11 +44,27 @@ struct Cli {
     #[arg(group = "fday", short = 'f', long = "first", value_name = "0-6")]
     fday_n: Option<u8>,
 
+    /// format calendar into NUM columns of months
+    #[arg(short, long, value_name = "NUM")]
+    column: Option<usize>,
+
     /// defaults to current year
     year: Option<Year>,
 
     /// defaults to current month
     month: Option<Month>,
+}
+
+fn default_column() -> usize {
+    const MAX_COL: usize = 3;
+    const DEFAULT_TERM_WIDTH: u16 = 80;
+
+    match termsize::get() {
+        Some(size) if size.cols < DEFAULT_TERM_WIDTH => {
+            cmp::max(size.cols as usize / carender::MONTH_WIDTH, 1)
+        }
+        _ => MAX_COL,
+    }
 }
 
 fn main() {
@@ -70,7 +88,7 @@ fn main() {
             (YearMonth::new(year, month), 12)
         }
     } else if let Some(n) = cli.len_n {
-        (YearMonth::new(year, month), std::cmp::max(n, 1))
+        (YearMonth::new(year, month), cmp::max(n, 1))
     } else {
         /* special case: `cal YEAR` should print whole year calendar */
         if cli.year.is_some() && cli.month.is_none() {
@@ -88,7 +106,12 @@ fn main() {
         _ => 0,
     };
 
-    let cal = Calendar::new(origin, len, span, fday);
+    let column = match cli.column {
+        Some(c) => cmp::max(c, 1),
+        None => default_column(),
+    };
+
+    let cal = Calendar::new(origin, len, span, fday, column);
 
     println!("{}", cal);
 }

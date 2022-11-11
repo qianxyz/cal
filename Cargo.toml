@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 chrono = "0.4.22"
 clap = { version = "4.0.22", features = ["derive"] }
+termsize = "0.1.6"

@@ -11,6 +11,6 @@ Unix `cal` utility, written in Rust, inspired by:
 - [x] Plain calendar for a month
 - [x] Multi-month formatting
 - [x] First weekday `[-s | -m | -f num]`
-- [ ] Columns `[-c num]` and terminal width detection
+- [x] Columns `[-c num]` and terminal width detection
 - [ ] Weekend and today colorization
 - [ ] Previous and next month hint
