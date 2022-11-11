@@ -61,7 +61,7 @@ fn default_column() -> usize {
 
     match termsize::get() {
         Some(size) if size.cols < DEFAULT_TERM_WIDTH => {
-            cmp::max(size.cols as usize / carender::MONTH_WIDTH, 1)
+            cmp::max(size.cols as usize / MONTH_WIDTH, 1)
         }
         _ => MAX_COL,
     }
