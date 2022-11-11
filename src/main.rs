@@ -87,9 +87,8 @@ fn main() {
         (_, _, Some(n)) => n,
         _ => 0,
     };
-    println!("first day of week: {}", fday);
 
-    let cal = Calendar::new(origin, len, span);
+    let cal = Calendar::new(origin, len, span, fday);
 
     println!("{}", cal);
 }
