@@ -2,18 +2,18 @@ use crate::error::CalResult;
 use crate::wrapper::{Month, Weekday, Year};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-struct MonthOfYear(Year, Month);
+pub struct MonthOfYear(Year, Month);
 
 impl MonthOfYear {
-    fn new(year: u32, month: u8) -> CalResult<Self> {
+    pub fn new(year: u32, month: u8) -> CalResult<Self> {
         Ok(Self(year.into(), month.try_into()?))
     }
 
-    fn year(&self) -> Year {
+    pub fn year(&self) -> Year {
         self.0
     }
 
-    fn month(&self) -> Month {
+    pub fn month(&self) -> Month {
         self.1
     }
 
@@ -80,7 +80,7 @@ impl Iterator for MOYIter {
     }
 }
 
-struct CalRange {
+pub struct CalRange {
     /// the originally requested month of year
     origin: MonthOfYear,
 

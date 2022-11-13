@@ -1,4 +1,5 @@
 mod error;
+mod format;
 mod range;
 mod wrapper;
 
@@ -8,27 +9,6 @@ pub const MONTH_WIDTH: usize = 21;
 const DAY_ROWS: u8 = 6;
 
 impl YearMonth {
-
-    fn month_header(&self) -> String {
-        let smon = match self.month() {
-            1 => "January",
-            2 => "February",
-            3 => "March",
-            4 => "April",
-            5 => "May",
-            6 => "June",
-            7 => "July",
-            8 => "August",
-            9 => "September",
-            10 => "October",
-            11 => "November",
-            12 => "December",
-            _ => unreachable!(),
-        };
-
-        let header = format!("{} {}", smon, self.year());
-        format!("{:^1$}", header, MONTH_WIDTH)
-    }
 
     fn week_header(&self, fday: Weekday) -> String {
         const WEEK_HEADER: [&str; 7] = ["Su ", "Mo ", "Tu ", "We ", "Th ", "Fr ", "Sa "];
@@ -115,13 +95,6 @@ impl std::fmt::Display for Calendar {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn month_header() {
-        assert_eq!(YearMonth(2022, 1).month_header(), "    January 2022     ");
-        assert_eq!(YearMonth(2022, 2).month_header(), "    February 2022    ");
-        assert_eq!(YearMonth(2022, 3).month_header(), "     March 2022      ");
-    }
 
     #[test]
     fn week_header() {
