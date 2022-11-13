@@ -1,57 +1,13 @@
-pub type Year = u32;
-pub type Month = u8; /* 1 = January, ... */
-type Weekday = u8; /* 0 = Sunday, ... */
+mod error;
+mod range;
+mod wrapper;
+
+/*
 
 pub const MONTH_WIDTH: usize = 21;
 const DAY_ROWS: u8 = 6;
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct YearMonth(Year, Month);
-
 impl YearMonth {
-    pub fn new(year: Year, month: Month) -> Self {
-        assert!((1..=12).contains(&month));
-        Self(year, month)
-    }
-
-    fn year(&self) -> Year {
-        self.0
-    }
-
-    fn month(&self) -> Month {
-        self.1
-    }
-
-    fn is_leap_year(&self) -> bool {
-        match self.year() {
-            y if y % 400 == 0 => true,
-            y if y % 100 == 0 => false,
-            y => y % 4 == 0,
-        }
-    }
-
-    fn num_of_days(&self) -> u8 {
-        match self.month() {
-            1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
-            4 | 6 | 9 | 11 => 30,
-            2 => {
-                if self.is_leap_year() {
-                    29
-                } else {
-                    28
-                }
-            }
-            _ => unreachable!(),
-        }
-    }
-
-    fn weekday_of_first(&self) -> Weekday {
-        let a: u32 = (14 - self.month() as u32) / 12;
-        let y: u32 = self.year() - a;
-        let m: u32 = self.month() as u32 + 12 * a - 2;
-
-        ((1 + y + y / 4 - y / 100 + y / 400 + 31 * m / 12) % 7) as u8
-    }
 
     fn month_header(&self) -> String {
         let smon = match self.month() {
@@ -109,39 +65,6 @@ impl YearMonth {
         cal
     }
 
-    fn prev_month(&self) -> Self {
-        if self.month() == 1 {
-            YearMonth(self.year() - 1, 12)
-        } else {
-            YearMonth(self.year(), self.month() - 1)
-        }
-    }
-
-    fn next_month(&self) -> Self {
-        if self.month() == 12 {
-            YearMonth(self.year() + 1, 1)
-        } else {
-            YearMonth(self.year(), self.month() + 1)
-        }
-    }
-
-    fn iter(&self) -> YearMonthIter {
-        YearMonthIter(*self)
-    }
-}
-
-struct YearMonthIter(YearMonth);
-
-impl Iterator for YearMonthIter {
-    type Item = YearMonth;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let cur = self.0;
-        self.0 = cur.next_month();
-        Some(cur)
-    }
-}
-
 pub struct Calendar {
     origin: YearMonth,
     len: usize,
@@ -160,16 +83,6 @@ impl Calendar {
             fday,
             column,
         }
-    }
-
-    fn months(&self) -> impl Iterator<Item = YearMonth> {
-        let mut start = self.origin;
-        if self.span {
-            for _ in 0..self.len / 2 {
-                start = start.prev_month();
-            }
-        }
-        start.iter().take(self.len)
     }
 
     fn format(&self) -> String {
@@ -204,30 +117,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn leap_year() {
-        assert!(YearMonth(2000, 1).is_leap_year());
-        assert!(YearMonth(2020, 1).is_leap_year());
-        assert!(!YearMonth(2021, 1).is_leap_year());
-        assert!(!YearMonth(2100, 1).is_leap_year());
-    }
-
-    #[test]
-    fn month_length() {
-        assert_eq!(YearMonth(2020, 1).num_of_days(), 31);
-        assert_eq!(YearMonth(2020, 2).num_of_days(), 29);
-        assert_eq!(YearMonth(2020, 4).num_of_days(), 30);
-        assert_eq!(YearMonth(2021, 2).num_of_days(), 28);
-    }
-
-    #[test]
-    fn weekday_of_first() {
-        assert_eq!(YearMonth(2022, 11).weekday_of_first(), 2);
-        assert_eq!(YearMonth(2022, 12).weekday_of_first(), 4);
-        assert_eq!(YearMonth(2023, 1).weekday_of_first(), 0);
-        assert_eq!(YearMonth(2023, 2).weekday_of_first(), 3);
-    }
-
-    #[test]
     fn month_header() {
         assert_eq!(YearMonth(2022, 1).month_header(), "    January 2022     ");
         assert_eq!(YearMonth(2022, 2).month_header(), "    February 2022    ");
@@ -239,24 +128,6 @@ mod tests {
         assert_eq!(YearMonth(2022, 1).week_header(0), "Su Mo Tu We Th Fr Sa ");
         assert_eq!(YearMonth(2022, 1).week_header(1), "Mo Tu We Th Fr Sa Su ");
         assert_eq!(YearMonth(2022, 1).week_header(6), "Sa Su Mo Tu We Th Fr ");
-    }
-
-    #[test]
-    fn prev_next_month() {
-        assert_eq!(YearMonth(2022, 11).prev_month(), YearMonth(2022, 10));
-        assert_eq!(YearMonth(2022, 11).next_month(), YearMonth(2022, 12));
-        assert_eq!(YearMonth(2022, 1).prev_month(), YearMonth(2021, 12));
-        assert_eq!(YearMonth(2022, 12).next_month(), YearMonth(2023, 1));
-    }
-
-    #[test]
-    fn iter_month() {
-        let mut iter = YearMonth(2021, 12).iter();
-        assert_eq!(iter.next(), Some(YearMonth(2021, 12)));
-        for m in 1..=12 {
-            assert_eq!(iter.next(), Some(YearMonth(2022, m)));
-        }
-        assert_eq!(iter.next(), Some(YearMonth(2023, 1)));
     }
 
     #[test]
@@ -304,26 +175,6 @@ mod tests {
                 "30                   "
             ]
         );
-    }
-
-    #[test]
-    fn month_iter() {
-        let cal = Calendar::new(YearMonth(2022, 11), 3, false, 0, 1);
-        let mut iter = cal.months();
-        assert_eq!(iter.next(), Some(YearMonth(2022, 11)));
-        assert_eq!(iter.next(), Some(YearMonth(2022, 12)));
-        assert_eq!(iter.next(), Some(YearMonth(2023, 1)));
-        assert_eq!(iter.next(), None);
-    }
-
-    #[test]
-    fn month_iter_with_span() {
-        let cal = Calendar::new(YearMonth(2022, 11), 3, true, 0, 1);
-        let mut iter = cal.months();
-        assert_eq!(iter.next(), Some(YearMonth(2022, 10)));
-        assert_eq!(iter.next(), Some(YearMonth(2022, 11)));
-        assert_eq!(iter.next(), Some(YearMonth(2022, 12)));
-        assert_eq!(iter.next(), None);
     }
 
     #[test]
@@ -398,3 +249,4 @@ mod tests {
         );
     }
 }
+*/
