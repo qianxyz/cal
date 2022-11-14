@@ -4,20 +4,13 @@ use crate::wrapper::Weekday;
 impl Weekday {
     fn week_line(&self) -> String {
         (0..7)
-            .map(|i| {
-                format!(
-                    "{} ",
-                    Weekday::try_from((i + *self as u8) % 7)
-                        .unwrap()
-                        .to_string()
-                )
-            })
+            .map(|i| format!("{} ", Weekday::try_from((i + *self as u8) % 7).unwrap()))
             .collect()
     }
 }
 
 impl MonthOfYear {
-    const MONTH_WIDTH: usize = 21;
+    pub const MONTH_WIDTH: usize = 21;
     const DAYS_HEIGHT: usize = 6;
 
     fn header(&self) -> String {
@@ -52,7 +45,7 @@ impl MonthOfYear {
     }
 }
 
-struct CalFormat {
+pub struct CalFormat {
     /// range of months in calendar
     range: CalRange,
 
@@ -64,7 +57,7 @@ struct CalFormat {
 }
 
 impl CalFormat {
-    fn new(range: CalRange, fday: Weekday, column: usize) -> Self {
+    pub fn new(range: CalRange, fday: Weekday, column: usize) -> Self {
         Self {
             range,
             fday,
