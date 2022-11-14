@@ -17,7 +17,7 @@ impl MonthOfYear {
         self.1
     }
 
-    fn num_of_days(&self) -> u8 {
+    pub fn num_of_days(&self) -> u8 {
         use Month::*;
 
         match self.month() {
@@ -33,7 +33,7 @@ impl MonthOfYear {
         }
     }
 
-    fn weekday_of_first(&self) -> Weekday {
+    pub fn weekday_of_first(&self) -> Weekday {
         let a: u32 = (14 - self.month() as u32) / 12;
         let y: u32 = u32::from(self.year()) - a;
         let m: u32 = self.month() as u32 + 12 * a - 2;
@@ -92,7 +92,7 @@ pub struct CalRange {
 }
 
 impl CalRange {
-    fn new(year: u32, month: u8, len: usize, span: bool) -> CalResult<Self> {
+    pub fn new(year: u32, month: u8, len: usize, span: bool) -> CalResult<Self> {
         Ok(Self {
             origin: MonthOfYear::new(year, month)?,
             len,
@@ -100,7 +100,7 @@ impl CalRange {
         })
     }
 
-    fn iter(&self) -> impl Iterator<Item = MonthOfYear> {
+    pub fn iter(&self) -> impl Iterator<Item = MonthOfYear> {
         let mut start = self.origin;
         if self.span {
             for _ in 0..self.len / 2 {

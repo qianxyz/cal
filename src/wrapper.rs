@@ -102,7 +102,7 @@ impl fmt::Display for Month {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Weekday {
     Sunday = 0,
     Monday,
@@ -127,6 +127,20 @@ impl convert::TryFrom<u8> for Weekday {
             6 => Ok(Self::Saturday),
             _ => Err(CalError::InvalidWeekday(value)),
         }
+    }
+}
+
+impl fmt::Display for Weekday {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", &format!("{:?}", self)[..2])
+    }
+}
+
+impl std::ops::Sub for Weekday {
+    type Output = i8;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        (self as i8 - rhs as i8).rem_euclid(7)
     }
 }
 
@@ -178,5 +192,19 @@ mod tests {
     fn new_weekday() {
         assert_eq!(Weekday::try_from(0).unwrap(), Weekday::Sunday);
         assert!(Weekday::try_from(7).is_err());
+    }
+
+    #[test]
+    fn display_weekday() {
+        assert_eq!(Weekday::Sunday.to_string(), "Su");
+        assert_eq!(Weekday::Monday.to_string(), "Mo");
+    }
+
+    #[test]
+    fn diff_weekday() {
+        use Weekday::*;
+        assert_eq!(Sunday - Sunday, 0);
+        assert_eq!(Monday - Sunday, 1);
+        assert_eq!(Sunday - Monday, 6);
     }
 }
