@@ -11,4 +11,5 @@ clap = { version = "4.0.22", features = ["derive"] }
 colored = "2.0.0"
 itertools = "0.10.5"
 num-traits = "0.2.15"
+regex = "1.7.0"
 termsize = "0.1.6"
