@@ -9,5 +9,6 @@ edition = "2021"
 chrono = "0.4.22"
 clap = { version = "4.0.22", features = ["derive"] }
 colored = "2.0.0"
+itertools = "0.10.5"
 num-traits = "0.2.15"
 termsize = "0.1.6"
