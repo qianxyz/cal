@@ -1,10 +1,11 @@
-use chrono::{Datelike, Month, NaiveDate, Weekday};
+use chrono::{Datelike, Month, Months, NaiveDate, Weekday};
 use colored::Colorize;
 use itertools::Itertools;
 use num_traits::cast::FromPrimitive;
 
 const MONTH_WIDTH: usize = 3 * 7;
-const DAY_LINES: usize = 6;
+const DAY_ROWS: usize = 6;
+const MONTH_ROWS: usize = DAY_ROWS + 2;
 
 /// A line like "    November 2022    ".
 fn month_year_line(date: NaiveDate) -> String {
@@ -60,21 +61,91 @@ fn day_line(date: NaiveDate, start: Weekday, cur_month: u32) -> String {
         .join("")
 }
 
-/// Multiple lines for a whole month.
+/// Multiple lines for days in a month.
 fn day_lines(date: NaiveDate, start: Weekday) -> impl Iterator<Item = String> {
-    let first = NaiveDate::from_ymd_opt(date.year(), date.month(), 1).unwrap();
-    first
+    date.with_day(1)
+        .unwrap()
         .iter_weeks()
-        .take(DAY_LINES)
+        .take(DAY_ROWS)
         .map(move |d| day_line(d, start, date.month()))
 }
 
+/// A full month calendar.
 fn calendar(date: NaiveDate, start: Weekday) -> impl Iterator<Item = String> {
-    use std::iter;
-
-    iter::once(month_year_line(date))
-        .chain(iter::once(weekday_line(start)))
+    std::iter::once(month_year_line(date))
+        .chain(std::iter::once(weekday_line(start)))
         .chain(day_lines(date, start))
+}
+
+pub struct Calendar {
+    /// the queried date
+    query: NaiveDate,
+
+    /// how many months to display
+    nmon: u32,
+
+    /// whether to span the queried date
+    span: bool,
+
+    /// the first weekday
+    fday: Weekday,
+
+    /// horizontal capacity of months
+    ncol: usize,
+}
+
+impl Calendar {
+    pub fn new(
+        year: i32,
+        month: u32,
+        day: u32,
+        nmon: u32,
+        span: bool,
+        fday: u8,
+        ncol: usize,
+    ) -> Option<Self> {
+        Some(Self {
+            query: NaiveDate::from_ymd_opt(year, month, day)?,
+            nmon,
+            span,
+            fday: Weekday::from_u8(fday)?.pred(),
+            ncol,
+        })
+    }
+
+    fn iter_month(&self) -> impl Iterator<Item = NaiveDate> {
+        itertools::iterate(
+            if self.span {
+                self.query - Months::new(self.nmon / 2)
+            } else {
+                self.query
+            },
+            |d| *d + Months::new(1),
+        )
+        .take(self.nmon as usize)
+    }
+
+    fn format(&self) -> String {
+        self.iter_month()
+            .map(|m| calendar(m, self.fday))
+            .collect_vec()
+            .chunks_mut(self.ncol)
+            .flat_map(|vec_of_iters| {
+                (0..MONTH_ROWS).map(|_| {
+                    vec_of_iters
+                        .iter_mut()
+                        .map(|it| it.next().unwrap())
+                        .join(" ")
+                })
+            })
+            .join("\n")
+    }
+}
+
+impl std::fmt::Display for Calendar {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.format())
+    }
 }
 
 #[cfg(test)]
