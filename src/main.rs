@@ -44,13 +44,13 @@ struct Cli {
     #[arg(short = 'c', long = "column", value_name = "NUM")]
     ncol: Option<usize>,
 
-    /// defaults to current year
+    /// Defaults to current year
     year: Option<i32>,
 
-    /// defaults to current month
+    /// Defaults to current month
     month: Option<u32>,
 
-    /// defaults to current day
+    /// Defaults to current day
     day: Option<u32>,
 }
 
