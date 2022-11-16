@@ -3,7 +3,7 @@ use colored::Colorize;
 use itertools::Itertools;
 use num_traits::cast::FromPrimitive;
 
-const MONTH_WIDTH: usize = 3 * 7;
+pub const MONTH_WIDTH: usize = 3 * 7;
 const DAY_ROWS: usize = 6;
 const MONTH_ROWS: usize = DAY_ROWS + 2;
 
