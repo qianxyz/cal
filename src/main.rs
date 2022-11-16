@@ -1,9 +1,7 @@
-use carender::{Calendar, MONTH_WIDTH};
+use carender::Calendar;
 
 use chrono::{Datelike, Local};
 use clap::Parser;
-
-const MAX_NCOL: usize = 3;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -83,13 +81,7 @@ fn main() {
         _ => 0,
     };
 
-    let ncol = cli
-        .ncol
-        .unwrap_or(match termsize::get() {
-            Some(size) => (size.cols as usize / (MONTH_WIDTH + 1)).min(MAX_NCOL),
-            None => MAX_NCOL,
-        })
-        .max(1);
+    let ncol = cli.ncol;
 
     let cal = Calendar::new(year, month, day, nmon, span, fday, ncol).unwrap();
 

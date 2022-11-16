@@ -3,7 +3,7 @@ use colored::Colorize;
 use itertools::Itertools;
 use num_traits::cast::FromPrimitive;
 
-pub const MONTH_WIDTH: usize = 3 * 7;
+const MONTH_WIDTH: usize = 3 * 7;
 const DAY_ROWS: usize = 6;
 const MONTH_ROWS: usize = DAY_ROWS + 2;
 
@@ -77,6 +77,15 @@ fn calendar(date: NaiveDate, start: Weekday) -> impl Iterator<Item = String> {
         .chain(day_lines(date, start))
 }
 
+/// Terminal width (max value is 80)
+fn term_width() -> usize {
+    const DEFAULT_TERM_WIDTH: usize = 80;
+    match termsize::get() {
+        Some(size) => (size.cols as usize).min(DEFAULT_TERM_WIDTH),
+        None => DEFAULT_TERM_WIDTH,
+    }
+}
+
 pub struct Calendar {
     /// the queried date
     query: NaiveDate,
@@ -102,14 +111,14 @@ impl Calendar {
         nmon: u32,
         span: bool,
         fday: u8,
-        ncol: usize,
+        ncol: Option<usize>,
     ) -> Option<Self> {
         Some(Self {
             query: NaiveDate::from_ymd_opt(year, month, day)?,
             nmon,
             span,
             fday: Weekday::from_u8(fday)?.pred(),
-            ncol,
+            ncol: ncol.unwrap_or(term_width() / (MONTH_WIDTH + 1)).max(1),
         })
     }
 
@@ -204,7 +213,7 @@ mod tests {
 
     #[test]
     fn draw_single_month() {
-        let cal = Calendar::new(2022, 11, 1, 1, false, 0, 3).unwrap();
+        let cal = Calendar::new(2022, 11, 1, 1, false, 0, Some(3)).unwrap();
         assert_eq!(
             strip_color(&cal.format()),
             "\
@@ -221,7 +230,7 @@ mod tests {
 
     #[test]
     fn draw_two_months() {
-        let cal = Calendar::new(2022, 11, 1, 2, false, 0, 3).unwrap();
+        let cal = Calendar::new(2022, 11, 1, 2, false, 0, Some(3)).unwrap();
         assert_eq!(
             strip_color(&cal.format()),
             "\
@@ -238,7 +247,7 @@ mod tests {
 
     #[test]
     fn draw_year() {
-        let cal = Calendar::new(2022, 1, 1, 12, false, 0, 3).unwrap();
+        let cal = Calendar::new(2022, 1, 1, 12, false, 0, Some(3)).unwrap();
         assert_eq!(
             strip_color(&cal.format()),
             "\
