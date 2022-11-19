@@ -232,7 +232,7 @@ mod tests {
     fn draw_single_month() {
         let cal = Calendar::new((2022, 11, 1), 1, false, false, 0, Some(3)).unwrap();
         assert_eq!(
-            strip_color(&cal.format()),
+            strip_color(&cal.to_string()),
             "\
 \x20   November 2022    \n\
    Su Mo Tu We Th Fr Sa \n\
@@ -249,7 +249,7 @@ mod tests {
     fn draw_two_months() {
         let cal = Calendar::new((2022, 11, 1), 2, false, false, 0, Some(3)).unwrap();
         assert_eq!(
-            strip_color(&cal.format()),
+            strip_color(&cal.to_string()),
             "\
 \x20   November 2022         December 2022    \n\
    Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa \n\
@@ -264,42 +264,44 @@ mod tests {
 
     #[test]
     fn draw_year() {
-        let cal = Calendar::new((2022, 1, 1), 12, false, false, 0, Some(3)).unwrap();
+        let cal = Calendar::new((2022, 1, 1), 12, false, true, 0, Some(3)).unwrap();
         assert_eq!(
-            strip_color(&cal.format()),
+            strip_color(&cal.to_string()),
             "\
-\x20   January 2022          February 2022          March 2022      \n\
-   Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa \n\
-\x20                  1         1  2  3  4  5         1  2  3  4  5 \n\
-\x202  3  4  5  6  7  8   6  7  8  9 10 11 12   6  7  8  9 10 11 12 \n\
-\x209 10 11 12 13 14 15  13 14 15 16 17 18 19  13 14 15 16 17 18 19 \n\
-   16 17 18 19 20 21 22  20 21 22 23 24 25 26  20 21 22 23 24 25 26 \n\
-   23 24 25 26 27 28 29  27 28                 27 28 29 30 31       \n\
-   30 31                                                            \n\
-\x20    April 2022             May 2022              June 2022      \n\
-   Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa \n\
-\x20               1  2   1  2  3  4  5  6  7            1  2  3  4 \n\
-\x203  4  5  6  7  8  9   8  9 10 11 12 13 14   5  6  7  8  9 10 11 \n\
-   10 11 12 13 14 15 16  15 16 17 18 19 20 21  12 13 14 15 16 17 18 \n\
-   17 18 19 20 21 22 23  22 23 24 25 26 27 28  19 20 21 22 23 24 25 \n\
-   24 25 26 27 28 29 30  29 30 31              26 27 28 29 30       \n\
-\x20                                                                \n\
-\x20     July 2022            August 2022         September 2022    \n\
-   Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa \n\
-\x20               1  2      1  2  3  4  5  6               1  2  3 \n\
-\x203  4  5  6  7  8  9   7  8  9 10 11 12 13   4  5  6  7  8  9 10 \n\
-   10 11 12 13 14 15 16  14 15 16 17 18 19 20  11 12 13 14 15 16 17 \n\
-   17 18 19 20 21 22 23  21 22 23 24 25 26 27  18 19 20 21 22 23 24 \n\
-   24 25 26 27 28 29 30  28 29 30 31           25 26 27 28 29 30    \n\
-   31                                                               \n\
-\x20   October 2022          November 2022         December 2022    \n\
-   Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa  Su Mo Tu We Th Fr Sa \n\
-\x20                  1         1  2  3  4  5               1  2  3 \n\
-\x202  3  4  5  6  7  8   6  7  8  9 10 11 12   4  5  6  7  8  9 10 \n\
-\x209 10 11 12 13 14 15  13 14 15 16 17 18 19  11 12 13 14 15 16 17 \n\
-   16 17 18 19 20 21 22  20 21 22 23 24 25 26  18 19 20 21 22 23 24 \n\
-   23 24 25 26 27 28 29  27 28 29 30           25 26 27 28 29 30 31 \n\
-   30 31                                                            "
+\x20                              2022                                \n\
+                                                                      \n\
+\x20      January               February                 March        \n\
+   Su Mo Tu We Th Fr Sa   Su Mo Tu We Th Fr Sa   Su Mo Tu We Th Fr Sa \n\
+\x20                  1          1  2  3  4  5          1  2  3  4  5 \n\
+\x202  3  4  5  6  7  8    6  7  8  9 10 11 12    6  7  8  9 10 11 12 \n\
+\x209 10 11 12 13 14 15   13 14 15 16 17 18 19   13 14 15 16 17 18 19 \n\
+   16 17 18 19 20 21 22   20 21 22 23 24 25 26   20 21 22 23 24 25 26 \n\
+   23 24 25 26 27 28 29   27 28                  27 28 29 30 31       \n\
+   30 31                                                              \n\
+\x20       April                   May                   June         \n\
+   Su Mo Tu We Th Fr Sa   Su Mo Tu We Th Fr Sa   Su Mo Tu We Th Fr Sa \n\
+\x20               1  2    1  2  3  4  5  6  7             1  2  3  4 \n\
+\x203  4  5  6  7  8  9    8  9 10 11 12 13 14    5  6  7  8  9 10 11 \n\
+   10 11 12 13 14 15 16   15 16 17 18 19 20 21   12 13 14 15 16 17 18 \n\
+   17 18 19 20 21 22 23   22 23 24 25 26 27 28   19 20 21 22 23 24 25 \n\
+   24 25 26 27 28 29 30   29 30 31               26 27 28 29 30       \n\
+\x20                                                                  \n\
+\x20       July                  August                September      \n\
+   Su Mo Tu We Th Fr Sa   Su Mo Tu We Th Fr Sa   Su Mo Tu We Th Fr Sa \n\
+\x20               1  2       1  2  3  4  5  6                1  2  3 \n\
+\x203  4  5  6  7  8  9    7  8  9 10 11 12 13    4  5  6  7  8  9 10 \n\
+   10 11 12 13 14 15 16   14 15 16 17 18 19 20   11 12 13 14 15 16 17 \n\
+   17 18 19 20 21 22 23   21 22 23 24 25 26 27   18 19 20 21 22 23 24 \n\
+   24 25 26 27 28 29 30   28 29 30 31            25 26 27 28 29 30    \n\
+   31                                                                 \n\
+\x20      October               November               December       \n\
+   Su Mo Tu We Th Fr Sa   Su Mo Tu We Th Fr Sa   Su Mo Tu We Th Fr Sa \n\
+\x20                  1          1  2  3  4  5                1  2  3 \n\
+\x202  3  4  5  6  7  8    6  7  8  9 10 11 12    4  5  6  7  8  9 10 \n\
+\x209 10 11 12 13 14 15   13 14 15 16 17 18 19   11 12 13 14 15 16 17 \n\
+   16 17 18 19 20 21 22   20 21 22 23 24 25 26   18 19 20 21 22 23 24 \n\
+   23 24 25 26 27 28 29   27 28 29 30            25 26 27 28 29 30 31 \n\
+   30 31                                                              "
         );
     }
 }
