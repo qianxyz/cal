@@ -83,7 +83,13 @@ fn main() {
 
     let ncol = cli.ncol;
 
-    let cal = Calendar::new((y, m, d), nmon, span, year, fday, ncol).unwrap();
+    let hlight = if cli.day.is_some() {
+        (y, m, d)
+    } else {
+        (now.year(), now.month(), now.day())
+    };
+
+    let cal = Calendar::new((y, m, d), nmon, span, year, fday, ncol, hlight).unwrap();
 
     println!("{}", cal);
 }

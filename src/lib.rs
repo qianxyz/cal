@@ -50,14 +50,26 @@ fn day_cell(date: NaiveDate) -> String {
 
 /// A line like " 8  9 10 11 12 13 14 ".
 /// Current month must be provided to determine which days to show.
-fn day_line(date: NaiveDate, start: Weekday, cur_month: u32) -> String {
+fn day_line(
+    date: NaiveDate,
+    start: Weekday,
+    cur_month: u32,
+    hlight: NaiveDate,
+    hint: bool,
+) -> String {
     date.week(start)
         .first_day()
         .iter_days()
         .take(7)
         .map(|d| {
             if d.month() == cur_month {
-                format!("{} ", day_cell(d))
+                if d == hlight {
+                    format!("{} ", day_cell(d).reversed())
+                } else {
+                    format!("{} ", day_cell(d))
+                }
+            } else if hint {
+                format!("{} ", day_cell(d).dimmed())
             } else {
                 "   ".to_string()
             }
@@ -66,19 +78,30 @@ fn day_line(date: NaiveDate, start: Weekday, cur_month: u32) -> String {
 }
 
 /// Multiple lines for days in a month.
-fn day_lines(date: NaiveDate, start: Weekday) -> impl Iterator<Item = String> {
+fn day_lines(
+    date: NaiveDate,
+    start: Weekday,
+    hlight: NaiveDate,
+    hint: bool,
+) -> impl Iterator<Item = String> {
     date.with_day(1)
         .unwrap()
         .iter_weeks()
         .take(DAY_ROWS)
-        .map(move |d| day_line(d, start, date.month()))
+        .map(move |d| day_line(d, start, date.month(), hlight, hint))
 }
 
 /// A full month calendar.
-fn calendar(date: NaiveDate, start: Weekday, full_year: bool) -> impl Iterator<Item = String> {
+fn calendar(
+    date: NaiveDate,
+    start: Weekday,
+    full_year: bool,
+    hlight: NaiveDate,
+    hint: bool,
+) -> impl Iterator<Item = String> {
     std::iter::once(month_year_line(date, full_year))
         .chain(std::iter::once(weekday_line(start)))
-        .chain(day_lines(date, start))
+        .chain(day_lines(date, start, hlight, hint))
 }
 
 /// Terminal width (max value is 80)
@@ -108,6 +131,9 @@ pub struct Calendar {
 
     /// horizontal capacity of months
     ncol: usize,
+
+    /// a date to highlight
+    hlight: NaiveDate,
 }
 
 impl Calendar {
@@ -118,6 +144,7 @@ impl Calendar {
         year: bool,
         fday: u8,
         ncol: Option<usize>,
+        hl: (i32, u32, u32),
     ) -> Option<Self> {
         Some(Self {
             query: NaiveDate::from_ymd_opt(ymd.0, ymd.1, ymd.2)?,
@@ -132,24 +159,24 @@ impl Calendar {
                     (term_width() + 1) / (MONTH_WIDTH + 1)
                 })
                 .max(1),
+            hlight: NaiveDate::from_ymd_opt(hl.0, hl.1, hl.2)?,
         })
     }
 
     fn iter_month(&self) -> impl Iterator<Item = NaiveDate> {
-        itertools::iterate(
-            if self.span {
-                self.query - Months::new(self.nmon / 2)
-            } else {
-                self.query
-            },
-            |d| *d + Months::new(1),
-        )
-        .take(self.nmon as usize)
+        let start = if self.year {
+            self.query.with_ordinal(1).unwrap()
+        } else if self.span {
+            self.query - Months::new(self.nmon / 2)
+        } else {
+            self.query
+        };
+        itertools::iterate(start, |d| *d + Months::new(1)).take(self.nmon as usize)
     }
 
     fn format(&self) -> String {
         self.iter_month()
-            .map(|m| calendar(m, self.fday, self.year))
+            .map(|m| calendar(m, self.fday, self.year, self.hlight, self.nmon == 1))
             .collect_vec()
             .chunks_mut(self.ncol)
             .flat_map(|vec_of_iters| {
@@ -203,23 +230,23 @@ mod tests {
     #[test]
     fn day_line_test() {
         let date = NaiveDate::from_ymd_opt(2022, 11, 1).unwrap();
-        let cur_line = "       1  2  3  4 \x1b[31m 5\x1b[0m ";
-        assert_eq!(day_line(date, Weekday::Sun, 11), cur_line);
+        let cur_line = "      \x1b[7m 1\x1b[0m  2  3  4 \x1b[31m 5\x1b[0m ";
+        assert_eq!(day_line(date, Weekday::Sun, 11, date, false), cur_line);
         let prev_line = "\x1b[31m30\x1b[0m 31                ";
-        assert_eq!(day_line(date, Weekday::Sun, 10), prev_line);
+        assert_eq!(day_line(date, Weekday::Sun, 10, date, false), prev_line);
     }
 
     #[test]
     fn calendar_vec() {
         let date = NaiveDate::from_ymd_opt(2022, 11, 11).unwrap();
-        let cal: Vec<_> = calendar(date, Weekday::Sun, false).collect();
+        let cal: Vec<_> = calendar(date, Weekday::Sun, false, date, false).collect();
         assert_eq!(
             cal,
             [
                 "    November 2022    ",
                 "\x1b[31mSu\x1b[0m Mo Tu We Th Fr \x1b[31mSa\x1b[0m ",
                 "       1  2  3  4 \x1b[31m 5\x1b[0m ",
-                "\x1b[31m 6\x1b[0m  7  8  9 10 11 \x1b[31m12\x1b[0m ",
+                "\x1b[31m 6\x1b[0m  7  8  9 10 \x1b[7m11\x1b[0m \x1b[31m12\x1b[0m ",
                 "\x1b[31m13\x1b[0m 14 15 16 17 18 \x1b[31m19\x1b[0m ",
                 "\x1b[31m20\x1b[0m 21 22 23 24 25 \x1b[31m26\x1b[0m ",
                 "\x1b[31m27\x1b[0m 28 29 30          ",
@@ -230,24 +257,24 @@ mod tests {
 
     #[test]
     fn draw_single_month() {
-        let cal = Calendar::new((2022, 11, 1), 1, false, false, 0, Some(3)).unwrap();
+        let cal = Calendar::new((2022, 11, 1), 1, false, false, 0, Some(3), (1970, 1, 1)).unwrap();
         assert_eq!(
             strip_color(&cal.to_string()),
             "\
 \x20   November 2022    \n\
    Su Mo Tu We Th Fr Sa \n\
-\x20      1  2  3  4  5 \n\
+   30 31  1  2  3  4  5 \n\
 \x206  7  8  9 10 11 12 \n\
    13 14 15 16 17 18 19 \n\
    20 21 22 23 24 25 26 \n\
-   27 28 29 30          \n\
-\x20                    "
+   27 28 29 30  1  2  3 \n\
+\x204  5  6  7  8  9 10 "
         );
     }
 
     #[test]
     fn draw_two_months() {
-        let cal = Calendar::new((2022, 11, 1), 2, false, false, 0, Some(3)).unwrap();
+        let cal = Calendar::new((2022, 11, 1), 2, false, false, 0, Some(3), (1970, 1, 1)).unwrap();
         assert_eq!(
             strip_color(&cal.to_string()),
             "\
@@ -264,7 +291,7 @@ mod tests {
 
     #[test]
     fn draw_year() {
-        let cal = Calendar::new((2022, 1, 1), 12, false, true, 0, Some(3)).unwrap();
+        let cal = Calendar::new((2022, 1, 1), 12, false, true, 0, Some(3), (1970, 1, 1)).unwrap();
         assert_eq!(
             strip_color(&cal.to_string()),
             "\
