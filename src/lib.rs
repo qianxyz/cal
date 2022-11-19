@@ -8,9 +8,13 @@ const DAY_ROWS: usize = 6;
 const MONTH_ROWS: usize = DAY_ROWS + 2;
 
 /// A line like "    November 2022    ".
-fn month_year_line(date: NaiveDate) -> String {
+fn month_year_line(date: NaiveDate, full_year: bool) -> String {
     let month = Month::from_u32(date.month()).unwrap();
-    let header = format!("{} {}", month.name(), date.year());
+    let header = if full_year {
+        month.name().to_string()
+    } else {
+        format!("{} {}", month.name(), date.year())
+    };
     format!("{:^1$}", header, MONTH_WIDTH)
 }
 
@@ -71,8 +75,8 @@ fn day_lines(date: NaiveDate, start: Weekday) -> impl Iterator<Item = String> {
 }
 
 /// A full month calendar.
-fn calendar(date: NaiveDate, start: Weekday) -> impl Iterator<Item = String> {
-    std::iter::once(month_year_line(date))
+fn calendar(date: NaiveDate, start: Weekday, full_year: bool) -> impl Iterator<Item = String> {
+    std::iter::once(month_year_line(date, full_year))
         .chain(std::iter::once(weekday_line(start)))
         .chain(day_lines(date, start))
 }
@@ -96,6 +100,9 @@ pub struct Calendar {
     /// whether to span the queried date
     span: bool,
 
+    /// display a whole year (overwrites `nmon` and `span`)
+    year: bool,
+
     /// the first weekday
     fday: Weekday,
 
@@ -105,20 +112,26 @@ pub struct Calendar {
 
 impl Calendar {
     pub fn new(
-        year: i32,
-        month: u32,
-        day: u32,
+        ymd: (i32, u32, u32),
         nmon: u32,
         span: bool,
+        year: bool,
         fday: u8,
         ncol: Option<usize>,
     ) -> Option<Self> {
         Some(Self {
-            query: NaiveDate::from_ymd_opt(year, month, day)?,
+            query: NaiveDate::from_ymd_opt(ymd.0, ymd.1, ymd.2)?,
             nmon,
             span,
+            year,
             fday: Weekday::from_u8(fday)?.pred(),
-            ncol: ncol.unwrap_or(term_width() / (MONTH_WIDTH + 1)).max(1),
+            ncol: ncol
+                .unwrap_or(if year {
+                    (term_width() + 2) / (MONTH_WIDTH + 2)
+                } else {
+                    (term_width() + 1) / (MONTH_WIDTH + 1)
+                })
+                .max(1),
         })
     }
 
@@ -136,7 +149,7 @@ impl Calendar {
 
     fn format(&self) -> String {
         self.iter_month()
-            .map(|m| calendar(m, self.fday))
+            .map(|m| calendar(m, self.fday, self.year))
             .collect_vec()
             .chunks_mut(self.ncol)
             .flat_map(|vec_of_iters| {
@@ -144,7 +157,7 @@ impl Calendar {
                     vec_of_iters
                         .iter_mut()
                         .map(|it| it.next().unwrap())
-                        .join(" ")
+                        .join(if self.year { "  " } else { " " })
                 })
             })
             .join("\n")
@@ -153,6 +166,10 @@ impl Calendar {
 
 impl std::fmt::Display for Calendar {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.year {
+            let width = self.ncol * MONTH_WIDTH + (self.ncol - 1) * 2;
+            write!(f, "{:^1$}\n\n", self.query.year(), width)?;
+        }
         write!(f, "{}", self.format())
     }
 }
@@ -170,9 +187,9 @@ mod tests {
     #[test]
     fn month_year_line_test() {
         let date = NaiveDate::from_ymd_opt(2022, 1, 1).unwrap();
-        assert_eq!(month_year_line(date), "    January 2022     ");
+        assert_eq!(month_year_line(date, false), "    January 2022     ");
         let date = NaiveDate::from_ymd_opt(2022, 11, 1).unwrap();
-        assert_eq!(month_year_line(date), "    November 2022    ");
+        assert_eq!(month_year_line(date, false), "    November 2022    ");
     }
 
     #[test]
@@ -195,7 +212,7 @@ mod tests {
     #[test]
     fn calendar_vec() {
         let date = NaiveDate::from_ymd_opt(2022, 11, 11).unwrap();
-        let cal: Vec<_> = calendar(date, Weekday::Sun).collect();
+        let cal: Vec<_> = calendar(date, Weekday::Sun, false).collect();
         assert_eq!(
             cal,
             [
@@ -213,7 +230,7 @@ mod tests {
 
     #[test]
     fn draw_single_month() {
-        let cal = Calendar::new(2022, 11, 1, 1, false, 0, Some(3)).unwrap();
+        let cal = Calendar::new((2022, 11, 1), 1, false, false, 0, Some(3)).unwrap();
         assert_eq!(
             strip_color(&cal.format()),
             "\
@@ -230,7 +247,7 @@ mod tests {
 
     #[test]
     fn draw_two_months() {
-        let cal = Calendar::new(2022, 11, 1, 2, false, 0, Some(3)).unwrap();
+        let cal = Calendar::new((2022, 11, 1), 2, false, false, 0, Some(3)).unwrap();
         assert_eq!(
             strip_color(&cal.format()),
             "\
@@ -247,7 +264,7 @@ mod tests {
 
     #[test]
     fn draw_year() {
-        let cal = Calendar::new(2022, 1, 1, 12, false, 0, Some(3)).unwrap();
+        let cal = Calendar::new((2022, 1, 1), 12, false, false, 0, Some(3)).unwrap();
         assert_eq!(
             strip_color(&cal.format()),
             "\

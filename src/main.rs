@@ -56,23 +56,23 @@ fn main() {
     let cli = Cli::parse();
 
     let now = Local::now();
-    let year = cli.year.unwrap_or_else(|| now.year());
+    let y = cli.year.unwrap_or_else(|| now.year());
     let m = cli.month.unwrap_or_else(|| now.month());
-    let day = cli.day.unwrap_or(1);
+    let d = cli.day.unwrap_or(1);
 
-    let (month, nmon, span) = if cli.nmon_1 {
-        (m, 1, false)
+    let (nmon, span, year) = if cli.nmon_1 {
+        (1, false, false)
     } else if cli.nmon_3 {
-        (m, 3, true)
+        (3, true, false)
     } else if cli.nmon_y {
-        (1, 12, false)
+        (12, false, true)
     } else if let Some(n) = cli.nmon_n {
-        (m, n.max(1), cli.span)
+        (n.max(1), cli.span, false)
     } else if cli.year.is_some() && cli.month.is_none() {
         // special case: `cal YEAR` should print whole year calendar
-        (1, 12, false)
+        (12, false, true)
     } else {
-        (m, 1, false)
+        (1, false, false)
     };
 
     let fday = match (cli.fday_s, cli.fday_m, cli.fday_n) {
@@ -83,7 +83,7 @@ fn main() {
 
     let ncol = cli.ncol;
 
-    let cal = Calendar::new(year, month, day, nmon, span, fday, ncol).unwrap();
+    let cal = Calendar::new((y, m, d), nmon, span, year, fday, ncol).unwrap();
 
     println!("{}", cal);
 }
